@@ -1,0 +1,156 @@
+<!DOCTYPE html>
+<html>
+	<head>
+		<meta charset="utf-8" />
+		<title></title>
+		<style type="text/css">
+			table,tr,td{border: none; margin: 0; padding: 0;}
+			table{border-collapse: collapse;}
+			#drawPannel table{border: solid 1px red;}
+			#drawPannel tr td{width: 2px; height: 2px; border: solid 1px red; border: none;}
+			.rangeTool{}
+			.rangeTool .rangeBox{display: inline-block; position: relative;}
+			.rangeTool .rangeBox .altMsg{position: absolute; font-size: 14px; text-align: center; height: 1em; line-height: 1em; top:-1em; background: #cccccc; display: none;}
+			.rangeTool .rangeBox .diameter{}
+		</style>
+		<script src="js/xcAddEvent.js" type="text/javascript" charset="utf-8"></script>
+		<script type="text/javascript">
+			window.onload = function(){
+				var drawPannel = document.getElementById("drawPannel");//画板容器
+				var diameter = document.getElementById("diameter");//直径选择按钮
+				//var cellArr = drawPannel.getElementsByTagName("td");//单元格dom对象数组
+				var tableSize = 200;//表格尺寸，长=宽
+				var bgColor = "#000000";//画笔颜色
+				var lock = false;//控制画笔是否渲染
+				
+				init();
+				
+				function init(){
+					createTable(drawPannel, tableSize);
+				}
+				
+				//落笔加锁
+				xcAddEvent(drawPannel.getElementsByTagName("td"),"mousedown",function(e){
+					lock = true;
+				});
+				//起笔解锁
+				xcAddEvent(drawPannel.getElementsByTagName("td"),"mouseup",function(e){
+					lock = false;
+				});
+				
+				//画笔落点-td绑定渲染
+				xcAddEvent(drawPannel.getElementsByTagName("td"),"mouseover",function(e){
+					if(lock == false){return false;}
+					var c = this;
+					var x = c.data.posX;//坐标x
+					var y = c.data.posY;//坐标y
+					var d = diameter.value;//直径
+					var r = parseInt(d/2);//半径,取整
+					var thisId = parseInt( c.getAttribute("id").substring( c.getAttribute("id").indexOf("_") + 1 ) );//该点id
+					var i=0, j=0;
+					if( d%2 === 1){//基数点
+						for(i = 0; i < d; i++ ){
+							var ox = thisId % tableSize == 0 ? thisId == 0 ? 0 : 100 : thisId % tableSize;
+							//防越界
+							if(ox != 0 && (ox - r + i < 1 || ox + i - r > tableSize)){continue;}
+							var h = Math.ceil( getCalculus(i, i+1, r+0.5) );//该单元面积积分，加0.5是弥补被parseInt干掉的小数位
+							for(j = 0; j < h; j++){
+								var p1 = thisId - r + i - j * tableSize;//渲染点向上
+								var p2 = thisId - r + i + j * tableSize;//渲染点向下
+								setPoint(p1);
+								setPoint(p2);
+							}
+							//console.log("积出来的面积：",getCalculus(i, i+1, r+0.5));//加0.5是弥补被parseInt干掉的小数位
+						}
+					}else if( d%2 === 0 ){//偶数点,以落点及从右到下经过区域的四个点为基点
+						for(i = 0; i < d; i++ ){
+							var ox = thisId % tableSize == 0 ? thisId == 0 ? 0 : 100 : thisId % tableSize;
+							//防越界
+							if(ox != 0 && (ox - r + i < 1 || ox + i - r > tableSize)){continue;}
+							var h = Math.ceil( getCalculus(i, i+1, r) );//该单元面积积分
+							for(j = 0; j < h; j++){
+								var p1 = thisId - (r-1) + i - j * tableSize;//渲染点向上
+								var p2 = thisId - (r-1) + i + (j+1) * tableSize;//渲染点向下
+								setPoint(p1);
+								setPoint(p2);
+							}
+							//console.log("积出来的面积：",getCalculus(i, i+1, r));
+						}
+					}
+					//console.log("x：", x, " y：", y);
+				});
+				 
+				 //选择画笔直径大小
+				 xcAddEvent(diameter,"change",function(){
+				 	this.setAttribute("title",this.value);
+				 });
+				 
+				 xcAddEvent(diameter,"click",function(){
+				 	var altMsg = document.getElementById("altMsg");//数值浮标
+				 	var unit = (diameter.offsetWidth - 24)/( diameter.getAttribute("max") - diameter.getAttribute("min") );
+				 	altMsg.innerHTML = this.value;
+				 	altMsg.style.left = (this.value-1) * unit +13  + "px";
+				 	altMsg.style.display = "block";
+				 });
+				 
+//				window.onmousemove = function(e){
+//					e = e || window.event;
+//					var  x = e.clientX;
+//					var y = e.clientY;
+//					console.log(x,y);
+//				}
+
+				//创建表格DOM
+				function createTable(obj,n){
+					var table = document.createElement("table");	 
+					var x = 1, y = 1;
+					for(var i = 0; i < n; i++){
+						x = 1;
+						var row = table.insertRow();//创建一行
+						for(var j = 0; j < n; j++){
+							var cell = row.insertCell();//创建一个单元 
+							cell.setAttribute( "id", "td_" + (x + (y-1)*tableSize) );
+							cell.data = {"posX" : x, "posY" : y};
+							x++;
+						}
+						y++;
+					}
+					obj.appendChild(table);
+				}
+				
+				//画点染色
+				function setPoint(n){
+					if(document.getElementById("td_" + n )){
+						document.getElementById("td_" + n ).style.backgroundColor = bgColor;
+					}
+				}
+			};
+			
+			//获取1/2圆积分面积
+			function getCalculus(x1,x2,r){
+				x1 = x1 - r;
+				x2 = x2 - r;
+				var s1 = x1 * Math.sqrt(r*r - x1*x1) / 2 + r*r * Math.asin(x1 / r) / 2;
+				var s2 = x2 * Math.sqrt(r*r - x2*x2) / 2 + r*r * Math.asin(x2 / r) / 2;
+				return s2 - s1;
+			}
+		</script>
+	</head>
+	<body>
+		<div class="console">
+			<div class="inputLine">
+				<span>大小：</span>
+				<br /> <br />
+				<div class="rangeTool">
+					<span>1</span>
+					<div class="rangeBox">
+						<div class="altMsg" id="altMsg"></div>
+						<input type="range" min="1" max="20" class="diameter" id="diameter" step="1"  />
+					</div>
+					<span>20</span>
+				</div>
+			</div>
+		</div>
+		<div id="drawPannel"></div>
+	</body>
+</html>
