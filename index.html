@@ -7,7 +7,7 @@
 			table,tr,td{border: none; margin: 0; padding: 0;}
 			table{border-collapse: collapse;}
 			#drawPannel table{border: solid 1px red;}
-			#drawPannel tr td{width: 2px; height: 2px; border: solid 1px red; border: none;}
+			#drawPannel tr td{width: 2px; height: 2px; border: solid 1px red; border:none;}
 			.rangeTool{}
 			.rangeTool .rangeBox{display: inline-block; position: relative;}
 			.rangeTool .rangeBox .altMsg{position: absolute; font-size: 14px; text-align: center; height: 1em; line-height: 1em; top:-1em; background: #cccccc; display: none;}
@@ -39,7 +39,7 @@
 				});
 				
 				//画笔落点-td绑定渲染
-				xcAddEvent(drawPannel.getElementsByTagName("td"),"mouseover",function(e){
+				xcAddEvent(drawPannel.getElementsByTagName("td"),"mousemove",function(e){
 					if(lock == false){return false;}
 					var c = this;
 					var x = c.data.posX;//坐标x
@@ -50,7 +50,7 @@
 					var i=0, j=0;
 					if( d%2 === 1){//基数点
 						for(i = 0; i < d; i++ ){
-							var ox = thisId % tableSize == 0 ? thisId == 0 ? 0 : 100 : thisId % tableSize;
+							var ox = thisId % tableSize == 0 ? thisId == 0 ? 0 : tableSize : thisId % tableSize;
 							//防越界
 							if(ox != 0 && (ox - r + i < 1 || ox + i - r > tableSize)){continue;}
 							var h = Math.ceil( getCalculus(i, i+1, r+0.5) );//该单元面积积分，加0.5是弥补被parseInt干掉的小数位
@@ -64,9 +64,9 @@
 						}
 					}else if( d%2 === 0 ){//偶数点,以落点及从右到下经过区域的四个点为基点
 						for(i = 0; i < d; i++ ){
-							var ox = thisId % tableSize == 0 ? thisId == 0 ? 0 : 100 : thisId % tableSize;
+							var ox = thisId % tableSize == 0 ? thisId == 0 ? 0 : tableSize : thisId % tableSize;
 							//防越界
-							if(ox != 0 && (ox - r + i < 1 || ox + i - r > tableSize)){continue;}
+							if(ox != 0 && (ox - r + i < 0 || ox + i - r >= tableSize)){continue;}
 							var h = Math.ceil( getCalculus(i, i+1, r) );//该单元面积积分
 							for(j = 0; j < h; j++){
 								var p1 = thisId - (r-1) + i - j * tableSize;//渲染点向上
